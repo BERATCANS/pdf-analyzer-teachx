@@ -66,15 +66,16 @@ h1 { font-weight:600; } h2, h3 { font-weight:500; }
 
 /* Tabs */
 .stTabs [data-baseweb="tab-list"] { gap:1.4rem; border-bottom:1px solid var(--hairline); }
-.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:600; font-size:1rem;
-  color:var(--muted); padding:.5rem .1rem; }
-.stTabs [data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.4rem; margin-right:.4rem;
-  vertical-align:-.28em; }
+.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:600; font-size:1.2rem;
+  color:var(--muted); padding:.6rem .15rem; }
+.stTabs [data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.65rem; margin-right:.45rem;
+  vertical-align:-.3em; }
 .stTabs [aria-selected="true"] { color:var(--accent) !important; }
-.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:2.5px; }
+.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:3px; }
 
 /* Tighten the stacked block cards on the right */
-.stTabs [data-testid="stVerticalBlock"] { gap:.35rem; }
+.stTabs [data-testid="stVerticalBlock"] { gap:.15rem; }
+[data-testid="stExpander"] { margin-bottom:.15rem; }
 
 /* Tables & code */
 code, .stCode, pre { font-family:var(--mono) !important; }
