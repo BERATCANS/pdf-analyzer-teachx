@@ -28,7 +28,7 @@ THEME_CSS = """
 /* Base */
 html, body, [class*="css"], .stApp { font-family: var(--sans); color: var(--ink); }
 .stApp { background: var(--paper); }
-.block-container { padding-top: 2.2rem; max-width: 1400px; }
+.block-container { padding-top: 3.6rem; max-width: 1400px; }
 
 /* Headings in the display serif */
 h1, h2, h3, h4 { font-family: var(--serif); color: var(--ink); letter-spacing:-.01em; }
@@ -65,11 +65,16 @@ h1 { font-weight:600; } h2, h3 { font-weight:500; }
 [data-testid="stExpander"] summary:hover { color:var(--accent); }
 
 /* Tabs */
-.stTabs [data-baseweb="tab-list"] { gap:.35rem; border-bottom:1px solid var(--hairline); }
-.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:500; font-size:.9rem;
-  color:var(--muted); padding:.4rem .2rem; }
+.stTabs [data-baseweb="tab-list"] { gap:1.4rem; border-bottom:1px solid var(--hairline); }
+.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:600; font-size:1rem;
+  color:var(--muted); padding:.5rem .1rem; }
+.stTabs [data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.4rem; margin-right:.4rem;
+  vertical-align:-.28em; }
 .stTabs [aria-selected="true"] { color:var(--accent) !important; }
-.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); }
+.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:2.5px; }
+
+/* Tighten the stacked block cards on the right */
+.stTabs [data-testid="stVerticalBlock"] { gap:.35rem; }
 
 /* Tables & code */
 code, .stCode, pre { font-family:var(--mono) !important; }
@@ -238,7 +243,8 @@ with left:
 
 with right:
     tab_blocks, tab_fonts, tab_tables, tab_colors = st.tabs(
-        ["🔤 Blocks", "🅰️ Fonts", "▦ Tables", "🎨 Colors"]
+        [":material/view_agenda: Blocks", ":material/text_fields: Fonts",
+         ":material/table_chart: Tables", ":material/palette: Colors"]
     )
 
     # --- Blocks ---
