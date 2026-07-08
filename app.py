@@ -66,11 +66,12 @@ h1 { font-weight:600; } h2, h3 { font-weight:500; }
 
 /* Tabs */
 .stTabs [data-baseweb="tab-list"] { gap:1.4rem; border-bottom:1px solid var(--hairline); }
-.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:600; font-size:1.45rem;
-  color:var(--muted); padding:.6rem .15rem; }
-.stTabs [data-baseweb="tab"] p { font-size:1.45rem !important; font-weight:600; }
-.stTabs [data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.75rem; margin-right:.5rem;
-  vertical-align:-.3em; }
+.stTabs [data-baseweb="tab"] { font-family:var(--sans); color:var(--muted); padding:.6rem .15rem; }
+/* Grow every text node inside the tab (Streamlit wraps the label deeply) */
+.stTabs button[data-baseweb="tab"],
+.stTabs button[data-baseweb="tab"] * { font-size:1.45rem !important; font-weight:600 !important; }
+.stTabs button[data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.85rem !important;
+  margin-right:.5rem; vertical-align:-.3em; }
 .stTabs [aria-selected="true"] { color:var(--accent) !important; }
 .stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:3px; }
 
