@@ -110,7 +110,7 @@ zoom = st.sidebar.slider("Render quality (zoom)", 1.0, 4.0, 2.0, 0.5)
 display_w = st.sidebar.slider("Max image width (px)", 400, 1000, 700, 50)
 show_boxes = st.sidebar.checkbox("Show block boxes", value=True)
 color_mode = st.sidebar.radio(
-    "Color by", ["By block", "By font", "By size"]
+    "Color by", ["By font", "By block", "By size"]
 )
 
 if uploaded is None:
