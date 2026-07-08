@@ -10,7 +10,78 @@ import streamlit as st
 
 import analyzer
 
-st.set_page_config(page_title="PDF Analyzer", layout="wide", page_icon="📄")
+st.set_page_config(page_title="PDF Analyzer — Typography Inspector",
+                   layout="wide", page_icon="◐")
+
+# --- Design system (type-specimen aesthetic: warm paper, ink, pen-blue) ---
+THEME_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --paper:#FAF8F4; --surface:#FFFFFF; --ink:#1C1A17; --muted:#6B655C;
+  --accent:#2E4A7B; --accent-soft:#EAEEF6; --hairline:#E7E2D8;
+  --serif:'Fraunces',Georgia,serif; --sans:'Inter',-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+
+/* Base */
+html, body, [class*="css"], .stApp { font-family: var(--sans); color: var(--ink); }
+.stApp { background: var(--paper); }
+.block-container { padding-top: 2.2rem; max-width: 1400px; }
+
+/* Headings in the display serif */
+h1, h2, h3, h4 { font-family: var(--serif); color: var(--ink); letter-spacing:-.01em; }
+h1 { font-weight:600; } h2, h3 { font-weight:500; }
+
+/* Custom header band */
+.pa-header { border-bottom:1px solid var(--hairline); padding:0 0 1.1rem; margin-bottom:1.6rem; }
+.pa-eyebrow { font-family:var(--mono); font-size:.72rem; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--accent); font-weight:500; }
+.pa-title { font-family:var(--serif); font-weight:600; font-size:2.5rem; line-height:1.05;
+  margin:.28rem 0 .35rem; color:var(--ink); }
+.pa-title .dim { color:var(--muted); font-weight:400; }
+.pa-sub { color:var(--muted); font-size:.95rem; max-width:60ch; }
+.pa-file { font-family:var(--mono); font-size:.8rem; color:var(--accent);
+  background:var(--accent-soft); padding:.15rem .5rem; border-radius:5px; }
+
+/* Metric cards */
+[data-testid="stMetric"] { background:var(--surface); border:1px solid var(--hairline);
+  border-radius:12px; padding:1rem 1.1rem; box-shadow:0 1px 2px rgba(28,26,23,.03); }
+[data-testid="stMetricLabel"] { font-family:var(--mono); font-size:.68rem !important;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+[data-testid="stMetricValue"] { font-family:var(--serif); font-weight:600;
+  font-variant-numeric:tabular-nums; color:var(--ink); }
+[data-testid="stMetricDelta"] { font-family:var(--mono); font-size:.75rem; }
+
+/* Sidebar as a control panel */
+[data-testid="stSidebar"] { background:var(--surface); border-right:1px solid var(--hairline); }
+[data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] label { color:var(--ink); }
+
+/* Expanders as specimen cards */
+[data-testid="stExpander"] { border:1px solid var(--hairline) !important; border-radius:10px !important;
+  background:var(--surface); margin-bottom:.5rem; box-shadow:none; }
+[data-testid="stExpander"] summary { font-family:var(--mono); font-size:.85rem; }
+[data-testid="stExpander"] summary:hover { color:var(--accent); }
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] { gap:.35rem; border-bottom:1px solid var(--hairline); }
+.stTabs [data-baseweb="tab"] { font-family:var(--sans); font-weight:500; font-size:.9rem;
+  color:var(--muted); padding:.4rem .2rem; }
+.stTabs [aria-selected="true"] { color:var(--accent) !important; }
+.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); }
+
+/* Tables & code */
+code, .stCode, pre { font-family:var(--mono) !important; }
+[data-testid="stTable"], .stDataFrame { font-variant-numeric:tabular-nums; }
+[data-testid="stDataFrame"] { border:1px solid var(--hairline); border-radius:8px; }
+
+/* Captions */
+[data-testid="stCaptionContainer"], .stCaption { color:var(--muted); }
+hr { border-color:var(--hairline); }
+</style>
+"""
+st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 # Color palette for overlay boxes (assigned to blocks in order)
 BOX_COLORS = [
@@ -101,10 +172,24 @@ def color_chip(hexcol: str, size: int = 14) -> str:
     )
 
 
+def header(subtitle: str, file_name: str = ""):
+    """Renders the type-specimen header band."""
+    file_html = f'<span class="pa-file">{html.escape(file_name)}</span>' if file_name else ""
+    st.markdown(
+        f'<div class="pa-header">'
+        f'<div class="pa-eyebrow">Typography &amp; Layout Inspector</div>'
+        f'<div class="pa-title">PDF <span class="dim">Analyzer</span></div>'
+        f'<div class="pa-sub">{subtitle} {file_html}</div>'
+        f'</div>',
+        unsafe_allow_html=True)
+
+
 # ----------------------------------------------------------------------------
 # Sidebar
 # ----------------------------------------------------------------------------
-st.sidebar.title("📄 PDF Analyzer")
+st.sidebar.markdown(
+    '<div class="pa-eyebrow" style="margin-bottom:.6rem;">Controls</div>',
+    unsafe_allow_html=True)
 uploaded = st.sidebar.file_uploader("Upload PDF", type=["pdf"])
 zoom = st.sidebar.slider("Render quality (zoom)", 1.0, 4.0, 2.0, 0.5)
 display_w = st.sidebar.slider("Max image width (px)", 400, 1000, 700, 50)
@@ -114,10 +199,9 @@ color_mode = st.sidebar.radio(
 )
 
 if uploaded is None:
-    st.title("PDF Typography Analysis")
-    st.info("Upload a PDF from the left to get started. "
-            "Each text block's font, size, style, margins "
-            "(cm/inch/pt), color and tables will be analyzed.")
+    header("Upload a PDF to reveal the font, size, style, margins, spacing, "
+           "color and tables behind every block of text.")
+    st.info("Upload a PDF from the left to get started.")
     st.stop()
 
 data = run_analysis(uploaded.getvalue(), zoom)
@@ -131,7 +215,7 @@ page = data["pages"][sel]
 # ----------------------------------------------------------------------------
 # Top metrics
 # ----------------------------------------------------------------------------
-st.title(f"Analysis — {uploaded.name}")
+header("Analysis of", uploaded.name)
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Page size",
           f"{page['width']['cm']}×{page['height']['cm']} cm",
