@@ -64,16 +64,14 @@ h1 { font-weight:600; } h2, h3 { font-weight:500; }
 [data-testid="stExpander"] summary { font-family:var(--mono); font-size:.85rem; }
 [data-testid="stExpander"] summary:hover { color:var(--accent); }
 
-/* Tabs */
-.stTabs [data-baseweb="tab-list"] { gap:1.4rem; border-bottom:1px solid var(--hairline); }
-.stTabs [data-baseweb="tab"] { font-family:var(--sans); color:var(--muted); padding:.6rem .15rem; }
-/* Grow every text node inside the tab (Streamlit wraps the label deeply) */
-.stTabs button[data-baseweb="tab"],
-.stTabs button[data-baseweb="tab"] * { font-size:1.45rem !important; font-weight:600 !important; }
-.stTabs button[data-baseweb="tab"] [data-testid="stIconMaterial"] { font-size:1.85rem !important;
-  margin-right:.5rem; vertical-align:-.3em; }
-.stTabs [aria-selected="true"] { color:var(--accent) !important; }
-.stTabs [data-baseweb="tab-highlight"] { background:var(--accent); height:3px; }
+/* Tabs — this Streamlit build uses data-testid=stTab / role=tablist */
+[data-testid="stTabs"] [role="tablist"] { gap:1.6rem; border-bottom:1px solid var(--hairline); }
+[data-testid="stTab"] { padding:.55rem .1rem; }
+[data-testid="stTab"] [data-testid="stMarkdownContainer"] p {
+  font-size:1.4rem !important; font-weight:600 !important; color:var(--muted); }
+[data-testid="stTab"][aria-selected="true"] [data-testid="stMarkdownContainer"] p { color:var(--accent); }
+[data-testid="stTab"] [data-testid="stIconMaterial"] {
+  font-size:1.75rem !important; margin-right:.4rem; vertical-align:-.28em; }
 
 /* Tighten the stacked block cards on the right */
 .stTabs [data-testid="stVerticalBlock"] { gap:.15rem; }
