@@ -241,9 +241,19 @@ def _page_line_spacing(text_dict: dict):
     return measure(med) if med else None
 
 
-def analyze_pdf(path: str, zoom: float = 2.0) -> dict:
-    """Fully analyzes a PDF and returns a structured dict."""
-    doc = fitz.open(path)
+def analyze_pdf(source, zoom: float = 2.0) -> dict:
+    """Fully analyzes a PDF and returns a structured dict.
+
+    `source` is either a filesystem path (str) or the raw PDF bytes. Passing
+    bytes opens the document straight from memory — no temp file is written,
+    so nothing accumulates on disk when many users upload files.
+    """
+    if isinstance(source, (bytes, bytearray)):
+        doc = fitz.open(stream=bytes(source), filetype="pdf")
+        path = "<uploaded>"
+    else:
+        doc = fitz.open(source)
+        path = source
 
     pages_out = []
     font_summary = Counter()

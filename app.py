@@ -4,7 +4,6 @@ Run:  ./.venv/bin/streamlit run app.py
 """
 
 import html
-import tempfile
 
 import pandas as pd
 import streamlit as st
@@ -34,11 +33,8 @@ def m3(m: dict) -> str:
 
 @st.cache_data(show_spinner="Analyzing PDF…")
 def run_analysis(file_bytes: bytes, zoom: float) -> dict:
-    """Writes the uploaded file to a temp file and analyzes it (cached)."""
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(file_bytes)
-        tmp_path = tmp.name
-    return analyzer.analyze_pdf(tmp_path, zoom=zoom)
+    """Analyzes the uploaded PDF straight from memory (cached, no temp file)."""
+    return analyzer.analyze_pdf(file_bytes, zoom=zoom)
 
 
 def render_overlay(page: dict, color_mode: str, show_boxes: bool, display_w: int):
