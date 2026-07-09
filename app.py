@@ -111,6 +111,24 @@ def m3(m: dict) -> str:
     return f"{m['cm']} cm / {m['inch']} in / {m['pt']} pt"
 
 
+def spacing_note(ratio) -> str:
+    """A Word/Google-Docs style hint for a line-spacing multiple.
+
+    Maps the measured pitch-to-size ratio onto the familiar presets so a
+    reader recognizes it as 'single', '1.15', '1.5' or 'double'.
+    """
+    if not ratio:
+        return ""
+    presets = [(1.0, "single"), (1.15, "1.15"), (1.5, "1.5"), (2.0, "double")]
+    label, best = "", 0.15
+    for value, name in presets:
+        d = abs(ratio - value)
+        if d <= best:
+            best, label = d, name
+    tag = f" — ≈ {label}" if label else ""
+    return f" · ≈ {ratio}× line spacing{tag}"
+
+
 @st.cache_data(show_spinner="Analyzing PDF…")
 def run_analysis(file_bytes: bytes, zoom: float) -> dict:
     """Analyzes the uploaded PDF straight from memory (cached, no temp file)."""
@@ -241,7 +259,10 @@ left, right = st.columns([1, 1], gap="large")
 with left:
     st.subheader("Annotated view")
     ls = page.get("line_spacing")
-    ls_txt = f" · Typical line spacing: {ls['pt']} pt / {ls['cm']} cm" if ls else ""
+    ls_txt = (
+        f" · Typical line spacing: {ls['pt']} pt / {ls['cm']} cm"
+        + spacing_note(ls.get("ratio")) if ls else ""
+    )
     st.caption("Hover over a box to see its font, size, margins and color." + ls_txt)
     render_overlay(page, color_mode, show_boxes, display_w)
 
@@ -273,7 +294,9 @@ with right:
                 })
                 st.dataframe(mtab, hide_index=True, use_container_width=True)
                 st.markdown(f"**Gap to previous block:** {m3(b['gap_before'])}")
-                st.markdown(f"**Line spacing:** {m3(b['line_spacing'])}")
+                st.markdown(
+                    f"**Line spacing:** {m3(b['line_spacing'])}"
+                    + spacing_note(b.get("line_spacing_ratio")))
                 if len(b["spans"]) > 1:
                     sdf = pd.DataFrame([
                         {"text": s["text"][:30], "font": s["font"],
@@ -284,9 +307,32 @@ with right:
 
     # --- Fonts ---
     with tab_fonts:
+        st.caption("Fonts actually rendered as visible text (by size).")
         fdf = pd.DataFrame(data["font_summary"]).rename(
             columns={"font": "Font", "size": "Size (pt)", "count": "Count"})
         st.dataframe(fdf, hide_index=True, use_container_width=True)
+
+        declared = data.get("declared_fonts", [])
+        if declared:
+            only = [d for d in declared if not d["rendered"]]
+            st.markdown("**Declared fonts** — every font listed in the PDF's "
+                        "resources, whether or not it is drawn as live text.")
+            ddf = pd.DataFrame([{
+                "Font": d["font"],
+                "Type": d["type"],
+                "Embedded": "yes" if d["embedded"] else "no",
+                "Pages": d["page_count"],
+                "Status": "rendered" if d["rendered"] else "declared only",
+                "Rendered sizes (pt)": ", ".join(str(s) for s in d["sizes"]) or "—",
+            } for d in declared])
+            st.dataframe(ddf, hide_index=True, use_container_width=True)
+            if only:
+                names = ", ".join(d["font"] for d in only)
+                st.info(
+                    f"{len(only)} font(s) are declared/embedded but never drawn "
+                    f"as extractable text: **{names}**. These are usually left "
+                    "over in the resources, or the text using them was converted "
+                    "to outlines or an image (no text layer to read a font from).")
 
     # --- Tables ---
     with tab_tables:

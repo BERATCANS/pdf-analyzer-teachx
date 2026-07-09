@@ -32,6 +32,21 @@ def measure(pt: float) -> dict:
     }
 
 
+def spacing_multiple(spacing_pt: float, size_pt: float):
+    """Line-spacing as a Word/Google-Docs style multiple of the font size.
+
+    The value word processors show ("1.15", "1.5", "2.0") is the line pitch
+    divided by the font size, not an absolute length. Here we divide the
+    measured top-to-top (or baseline-to-baseline) distance by the dominant
+    font size, so ~11 pt text with a 12.65 pt pitch reads as ~1.15.
+
+    Returns None when either input is missing or the size is zero.
+    """
+    if not spacing_pt or not size_pt:
+        return None
+    return round(spacing_pt / size_pt, 2)
+
+
 def clean_font(name: str) -> str:
     """Strips the embedded subset prefix: 'ABCDEF+Arial' -> 'Arial'.
 
@@ -143,12 +158,14 @@ def _analyze_block(block: dict, page_rect: fitz.Rect, prev_bottom):
         if diffs:
             line_spacing = measure(sum(diffs) / len(diffs))
 
+    dominant_size = _dominant(sizes)
+
     return {
         "bbox": [round(v, 1) for v in block["bbox"]],
         "text": " ".join(s["text"] for s in spans_out).strip(),
         "spans": spans_out,
         "dominant_font": _dominant(fonts),
-        "dominant_size": _dominant(sizes),
+        "dominant_size": dominant_size,
         "dominant_color": _dominant(colors),
         "dominant_style": _dominant(styles) or "Normal",
         "margins": {
@@ -159,6 +176,9 @@ def _analyze_block(block: dict, page_rect: fitz.Rect, prev_bottom):
         },
         "gap_before": measure(y0 - prev_bottom) if prev_bottom is not None else None,
         "line_spacing": line_spacing,
+        "line_spacing_ratio": spacing_multiple(
+            line_spacing["pt"] if line_spacing else None, dominant_size
+        ),
     }
 
 
@@ -199,6 +219,72 @@ def _analyze_tables(page: fitz.Page, spans_xy):
     return tables_out
 
 
+def _font_kind(ftype: str, ext: str) -> dict:
+    """Human-readable descriptors for a get_fonts() entry.
+
+    `embedded` is True when the actual font program travels inside the PDF
+    (ext is a real file type like 'ttf'/'cff'); base-14 fonts such as
+    Helvetica ship no program and render with a viewer substitute.
+    """
+    embedded = bool(ext) and ext.lower() != "n/a"
+    return {"type": ftype or "?", "embedded": embedded}
+
+
+def _collect_declared_fonts(doc, rendered_sizes: dict):
+    """Every font declared in any page's /Resources, whether or not it is
+    actually painted as extractable text.
+
+    `rendered_sizes` maps a cleaned font name -> set of sizes seen in real
+    text spans, so each declared font can be flagged 'rendered' or
+    'declared only'. The latter is the usual cause of "the file says it has
+    font X but I never see it" — X is embedded/listed but drawn nowhere as
+    live text (or only as outlines/an image, which carry no text layer).
+    """
+    # MuPDF truncates span font names to 24 chars, while get_fonts() returns
+    # the full name — so match (and look up sizes) on a 24-char normalized key.
+    def norm(name: str) -> str:
+        return name[:24]
+
+    def rendered_sizes_for(name: str) -> set:
+        if name.startswith("Type3"):
+            # Type3 spans surface as "Type3 (NN 0 R)"; declared ones are unnamed.
+            hit = set()
+            for r, sizes in rendered_sizes.items():
+                if r.startswith("Type3"):
+                    hit |= sizes
+            return hit
+        return rendered_sizes.get(norm(name), set())
+
+    seen = {}  # name -> aggregated record
+    for page_num in range(doc.page_count):
+        for entry in doc.get_page_fonts(page_num, full=True):
+            # (xref, ext, type, basefont, name, encoding, referencer)
+            ext, ftype, basefont = entry[1], entry[2], entry[3]
+            name = clean_font(basefont) or f"{ftype or 'Unnamed'} (no name)"
+            rec = seen.get(name)
+            if rec is None:
+                kind = _font_kind(ftype, ext)
+                sizes = rendered_sizes_for(name)
+                rec = seen[name] = {
+                    "font": name,
+                    "type": kind["type"],
+                    "embedded": kind["embedded"],
+                    "pages": set(),
+                    "rendered": bool(sizes),
+                    "sizes": sorted(sizes),
+                }
+            rec["pages"].add(page_num + 1)
+
+    out = []
+    for rec in seen.values():
+        rec["pages"] = sorted(rec["pages"])
+        rec["page_count"] = len(rec["pages"])
+        out.append(rec)
+    # Rendered first, then by how many pages declare it, then name.
+    out.sort(key=lambda r: (not r["rendered"], -r["page_count"], r["font"]))
+    return out
+
+
 def _median(vals):
     s = sorted(vals)
     n = len(s)
@@ -230,6 +316,7 @@ def _page_line_spacing(text_dict: dict):
 
     lines.sort(key=lambda t: t[1])  # by vertical position
     gaps = []
+    ratios = []  # per-gap pitch / font size, for the Word-style multiple
     for i in range(len(lines) - 1):
         x0, y0, sz = lines[i]
         x1, y1, _ = lines[i + 1]
@@ -237,8 +324,16 @@ def _page_line_spacing(text_dict: dict):
         # Same column (similar left edge) and a plausible line-to-line gap
         if abs(x1 - x0) <= 3 and 0.3 * sz <= dy <= 3.5 * sz:
             gaps.append(dy)
+            if sz:
+                ratios.append(dy / sz)
     med = _median(gaps)
-    return measure(med) if med else None
+    if not med:
+        return None
+    med_ratio = _median(ratios)
+    return {
+        **measure(med),
+        "ratio": round(med_ratio, 2) if med_ratio else None,
+    }
 
 
 def analyze_pdf(source, zoom: float = 2.0) -> dict:
@@ -309,6 +404,13 @@ def analyze_pdf(source, zoom: float = 2.0) -> dict:
             "tables": tables_out,
         })
 
+    # Font name -> set of sizes actually rendered, to flag declared-only fonts.
+    rendered_sizes = {}
+    for (f, s) in font_summary:
+        rendered_sizes.setdefault(f, set()).add(s)
+
+    declared_fonts = _collect_declared_fonts(doc, rendered_sizes)
+
     result = {
         "path": path,
         "page_count": doc.page_count,
@@ -317,6 +419,7 @@ def analyze_pdf(source, zoom: float = 2.0) -> dict:
             {"font": f, "size": s, "count": c}
             for (f, s), c in sorted(font_summary.items(), key=lambda x: -x[0][1])
         ],
+        "declared_fonts": declared_fonts,
         "color_palette": [
             {"color": col, "count": c}
             for col, c in color_palette.most_common()

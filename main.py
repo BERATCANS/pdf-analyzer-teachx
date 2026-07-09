@@ -27,6 +27,20 @@ def main():
     for f in data["font_summary"]:
         print(f"{f['font']:<28} {f['size']:>7} {f['count']:>7}")
 
+    # Declared fonts (in the PDF's resources, rendered or not)
+    declared = data.get("declared_fonts", [])
+    if declared:
+        print("\n" + "=" * 50)
+        print("DECLARED FONTS (resources)")
+        print("=" * 50)
+        print(f"{'Font':<30} {'Type':<7} {'Emb':<4} {'Status':<14} Sizes")
+        print("-" * 50)
+        for d in declared:
+            status = "rendered" if d["rendered"] else "DECLARED ONLY"
+            sizes = ", ".join(str(s) for s in d["sizes"]) or "-"
+            emb = "yes" if d["embedded"] else "no"
+            print(f"{d['font']:<30} {d['type']:<7} {emb:<4} {status:<14} {sizes}")
+
     # Per-page block/table/size
     print("\n" + "=" * 50)
     print("PAGES")
