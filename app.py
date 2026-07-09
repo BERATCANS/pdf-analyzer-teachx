@@ -28,14 +28,17 @@ THEME_CSS = """
 /* Base */
 html, body, [class*="css"], .stApp { font-family: var(--sans); color: var(--ink); }
 .stApp { background: var(--paper); }
-.block-container { padding-top: 3.6rem; max-width: 1400px; }
+.block-container { padding-top: 2.9rem; max-width: 1400px; }
+/* Tighten global vertical rhythm */
+[data-testid="stMainBlockContainer"] [data-testid="stVerticalBlock"] { gap: .7rem; }
+hr { margin: .5rem 0 !important; }
 
 /* Headings in the display serif */
 h1, h2, h3, h4 { font-family: var(--serif); color: var(--ink); letter-spacing:-.01em; }
 h1 { font-weight:600; } h2, h3 { font-weight:500; }
 
 /* Custom header band */
-.pa-header { border-bottom:1px solid var(--hairline); padding:0 0 1.1rem; margin-bottom:1.6rem; }
+.pa-header { border-bottom:1px solid var(--hairline); padding:0 0 .5rem; margin-bottom:.7rem; }
 .pa-eyebrow { font-family:var(--mono); font-size:.72rem; letter-spacing:.22em;
   text-transform:uppercase; color:var(--accent); font-weight:500; }
 .pa-title { font-family:var(--serif); font-weight:600; font-size:2.5rem; line-height:1.05;
